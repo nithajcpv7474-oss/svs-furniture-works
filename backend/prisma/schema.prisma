@@ -1,0 +1,452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Connection Pooling is enabled via the DATABASE_URL parameters
+// e.g., ?connection_limit=20&pool_timeout=10
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+model User {
+  id                  String     @id @default(uuid())
+  fullName            String
+  email               String     @unique
+  phone               String?
+  password            String
+  role                String     @default("Sales Staff")
+  department              String?
+  isActive                Boolean    @default(true)
+  forcePasswordChange     Boolean    @default(true)
+  lastLogin               DateTime?
+  
+  // User Preferences
+  themePreference         String     @default("dark")
+  notificationPreferences Json?
+  autoClearAlerts         Boolean    @default(true)
+  autoClearDays           Int        @default(7)
+
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  auditLogs               AuditLog[]
+}
+
+enum CustomerType {
+  Retail
+  Dealer
+  InteriorDesigner
+  Export
+}
+
+enum CustomerStatus {
+  Active
+  Inactive
+}
+
+model Customer {
+  id             String         @id @default(uuid())
+  customerCode   String         @unique
+  fullName       String
+  phone          String         @unique
+  alternatePhone String?
+  email          String?        @unique
+  companyName    String?
+  gstNumber      String?
+  address        String?
+  city           String?
+  state          String?
+  pincode        String?
+  customerType   CustomerType   @default(Retail)
+  status         CustomerStatus @default(Active)
+  notes          String?
+  isDeleted      Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  orders         Order[]
+  deliveries     Delivery[]
+
+  @@index([status, isDeleted])
+}
+
+enum OrderStatus {
+  Pending
+  Confirmed
+  InProduction
+  QualityCheck
+  ReadyForDelivery
+  Delivered
+  Cancelled
+}
+
+enum Priority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
+model Order {
+  id                   String          @id @default(uuid())
+  orderNumber          String          @unique
+  customerId           String
+  customer             Customer        @relation(fields: [customerId], references: [id])
+  furnitureCategory    String
+  furnitureName        String
+  quantity             Int
+  length               Float?
+  width                Float?
+  height               Float?
+  measurementUnit      String?         @default("Inches")
+  woodMaterial         String?
+  finishType           String?
+  hardwareDetails      String[]
+  upholsteryRequired   Boolean         @default(false)
+  upholsteryMaterial   String?
+  upholsteryColor      String?
+  polishColor          String?
+  glassRequired        Boolean         @default(false)
+  glassType            String?
+  accessories          String[]
+  estimatedPrice       Float
+  advanceAmount        Float           @default(0)
+  balanceAmount        Float
+  expectedDeliveryDate DateTime?
+  deliveryAddress      String?
+  specialInstructions  String?
+  designImage          String?
+  referenceDrawing     String?
+  orderStatus          OrderStatus     @default(Pending)
+  priority             Priority        @default(Medium)
+  isDeleted            Boolean         @default(false)
+  createdBy            String?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  orderMaterials       OrderMaterial[]
+  productionJob        ProductionJob?
+  delivery             Delivery?
+
+  @@index([customerId])
+  @@index([orderStatus, isDeleted])
+  @@index([createdAt])
+}
+
+enum MaterialStatus {
+  Active
+  Inactive
+  Discontinued
+}
+
+enum TransactionType {
+  StockIn
+  StockOut
+  Adjustment
+}
+
+model Material {
+  id                String         @id @default(uuid())
+  materialCode      String         @unique
+  materialName      String
+  category          String
+  brand             String?
+  unit              String         @default("Pieces")
+  availableStock    Float          @default(0)
+  minimumStock      Float          @default(0)
+  reorderLevel      Float          @default(0)
+  purchasePrice     Float          @default(0)
+  sellingPrice      Float?
+  supplierName      String?
+  warehouseLocation String?
+  description       String?
+  image             String?
+  status            MaterialStatus @default(Active)
+  isDeleted         Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  transactions   InventoryTransaction[]
+  orderMaterials OrderMaterial[]
+
+  @@index([category])
+  @@index([status, isDeleted])
+}
+
+model InventoryTransaction {
+  id              String          @id @default(uuid())
+  materialId      String
+  material        Material        @relation(fields: [materialId], references: [id])
+  transactionType TransactionType
+  quantity        Float // Can be positive or negative for adjustments
+  reference       String? // PO number, Order number, etc.
+  remarks         String?
+  createdBy       String?
+  createdAt       DateTime        @default(now())
+
+  @@index([materialId])
+  @@index([createdAt])
+}
+
+model OrderMaterial {
+  id               String   @id @default(uuid())
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  materialId       String
+  material         Material @relation(fields: [materialId], references: [id])
+  quantityRequired Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([materialId])
+}
+
+enum ProductionStage {
+  MaterialAllocation
+  WoodCutting
+  Assembly
+  Finishing
+  Painting
+  Upholstery
+  QualityInspection
+  Packing
+  ReadyForDelivery
+}
+
+enum JobStatus {
+  NotStarted
+  InProgress
+  OnHold
+  Completed
+  Cancelled
+}
+
+enum TaskStatus {
+  Pending
+  InProgress
+  Completed
+}
+
+enum InspectionStatus {
+  Pending
+  Passed
+  Failed
+  NeedsRework
+}
+
+model ProductionJob {
+  id                     String          @id @default(uuid())
+  productionNumber       String          @unique
+  orderId                String          @unique
+  order                  Order           @relation(fields: [orderId], references: [id])
+  productionStage        ProductionStage @default(MaterialAllocation)
+  assignedEmployee       String?
+  startDate              DateTime?
+  expectedCompletionDate DateTime?
+  actualCompletionDate   DateTime?
+  priority               Priority        @default(Medium)
+  status                 JobStatus       @default(NotStarted)
+  remarks                String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  tasks       ProductionTask[]
+  inspections QualityInspection[]
+  delivery    Delivery?
+
+  @@index([orderId])
+  @@index([status, productionStage])
+}
+
+model ProductionTask {
+  id              String        @id @default(uuid())
+  productionJobId String
+  productionJob   ProductionJob @relation(fields: [productionJobId], references: [id], onDelete: Cascade)
+  taskName        String
+  assignedTo      String?
+  estimatedHours  Float?
+  actualHours     Float?
+  status          TaskStatus    @default(Pending)
+  remarks         String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([productionJobId])
+  @@index([status])
+}
+
+model QualityInspection {
+  id               String           @id @default(uuid())
+  productionJobId  String
+  productionJob    ProductionJob    @relation(fields: [productionJobId], references: [id], onDelete: Cascade)
+  inspectorName    String?
+  inspectionDate   DateTime?
+  inspectionStatus InspectionStatus @default(Pending)
+  remarks          String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([productionJobId])
+  @@index([inspectionStatus])
+}
+
+enum DeliveryStatus {
+  Pending
+  Scheduled
+  OutForDelivery
+  Delivered
+  InstallationPending
+  Completed
+  Failed
+  Rescheduled
+}
+
+enum DeliveryType {
+  Local
+  Dealer
+  Export
+}
+
+enum VehicleStatus {
+  Available
+  InUse
+  Maintenance
+}
+
+model Vehicle {
+  id            String        @id @default(uuid())
+  vehicleNumber String        @unique
+  vehicleType   String?
+  driverName    String?
+  driverPhone   String?
+  capacity      String?
+  status        VehicleStatus @default(Available)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  deliveries Delivery[]
+}
+
+model Delivery {
+  id              String        @id @default(uuid())
+  deliveryNumber  String        @unique
+  orderId         String        @unique
+  order           Order         @relation(fields: [orderId], references: [id])
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+  productionJobId String        @unique
+  productionJob   ProductionJob @relation(fields: [productionJobId], references: [id])
+  vehicleId       String?
+  vehicle         Vehicle?      @relation(fields: [vehicleId], references: [id])
+
+  deliveryType         DeliveryType   @default(Local)
+  deliveryStatus       DeliveryStatus @default(Pending)
+  dispatchDate         DateTime?
+  expectedDeliveryDate DateTime?
+  actualDeliveryDate   DateTime?
+
+  deliveryAddress String?
+  receiverName    String?
+  receiverPhone   String?
+  deliveryRemarks String?
+
+  shippingDocRef       String?
+  destinationPort      String?
+  transitTime          String?
+
+  proofOfDeliveryImage String?
+  customerSignature    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([customerId])
+  @@index([productionJobId])
+  @@index([vehicleId])
+  @@index([deliveryStatus])
+}
+
+model AppSetting {
+  id             String   @id @default("1")
+  companyName    String   @default("SVS Furniture")
+  companyLogo    String?
+  companyEmail   String   @default("contact@svsfurniture.com")
+  companyPhone   String   @default("")
+  companyAddress String   @default("")
+  gstin          String?
+  
+  // Financial Settings
+  currency       String   @default("INR")
+  taxRate        Float    @default(18.0)
+  
+  // Alert Thresholds
+  lowStockThreshold         Int @default(10)
+  deliveryOverdueGraceHours Int @default(24)
+  productionDelayGraceHours Int @default(24)
+  
+  // Alert Toggles
+  enableLowStockAlerts        Boolean @default(true)
+  enableDeliveryAlerts        Boolean @default(true)
+  enableProductionAlerts      Boolean @default(true)
+  enableSpecificationAlerts   Boolean @default(true)
+  
+  // Data & Export
+  defaultExportFormat String @default("PDF")
+  dateFormat          String @default("DD/MM/YYYY")
+
+  updatedAt      DateTime @updatedAt
+}
+
+enum NotificationType {
+  LOW_STOCK
+  DELAYED_PRODUCTION
+  LATE_DELIVERY
+  NEW_ORDER
+  COMPLETED_ORDER
+  USER_CREATED
+  ORDER_STATUS_CHANGE
+  SYSTEM
+}
+
+enum NotificationPriority {
+  low
+  medium
+  high
+  critical
+}
+
+model Notification {
+  id          String               @id @default(uuid())
+  title       String
+  message     String
+  type        NotificationType     @default(SYSTEM)
+  priority    NotificationPriority @default(medium)
+  isRead      Boolean              @default(false)
+  userId      String?              // Target user, null = broadcast to all
+  referenceId String?              // e.g. orderId, materialId
+  createdAt   DateTime             @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String   
+  module    String   
+  oldValue  Json?    
+  newValue  Json?    
+  ipAddress String?
+  browser   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([module])
+  @@index([action])
+  @@index([createdAt])
+}
+

@@ -1,0 +1,205 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+@theme {
+  --font-sans: var(--font-sans);
+  
+  /* Walnut & Amber Palette */
+  --color-primary: #D97B3F;
+  --color-primary-dark: #E8935C;
+  --color-primary-light: #FCECE3;
+  
+  --color-secondary: #1F1B17;
+  
+  /* Status Colors */
+  --color-success: #5FAE7E;
+  --color-success-light: #e6f2eb;
+  --color-success-dark: #4b8c65;
+  
+  --color-warning: #D9A441;
+  --color-warning-light: #fdf5e6;
+  --color-warning-dark: #b88a37;
+  
+  --color-danger: #C75C5C;
+  --color-danger-light: #faeaea;
+  --color-danger-dark: #a34b4b;
+  
+  --color-info: #6B8CAE;
+  --color-info-light: #eff3f7;
+  
+  /* Custom Shadows for enterprise depth */
+  --shadow-soft: 0 4px 20px rgba(0,0,0,0.03);
+  --shadow-hover: 0 10px 30px rgba(0,0,0,0.06);
+  --shadow-dark: 0 4px 20px rgba(0,0,0,0.4);
+  --shadow-dark-hover: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    width: 100%;
+    min-height: 100vh;
+  }
+  
+  body, #root {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    @apply bg-slate-50 dark:bg-[#15120F] text-slate-800 dark:text-[#F5F1EB] transition-colors duration-300;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Modern typography rules */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-semibold;
+  }
+}
+
+@layer utilities {
+  /* Premium Cards */
+  .card-premium {
+    @apply bg-white dark:bg-slate-900/95 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-[var(--shadow-soft)] dark:shadow-[var(--shadow-dark)] hover:shadow-[var(--shadow-hover)] dark:hover:shadow-[var(--shadow-dark-hover)] transition-all duration-300 overflow-hidden;
+  }
+  
+  /* Glassmorphism System */
+  .glass {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/40 dark:border-slate-700/50 shadow-sm transition-all duration-300;
+  }
+  .glass-panel {
+    @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 dark:border-slate-800 shadow-[var(--shadow-soft)] dark:shadow-[var(--shadow-dark)];
+  }
+  
+  /* Buttons */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-white font-medium py-2.5 px-5 rounded-xl shadow-[0_4px_14px_0_rgba(59,130,246,0.39)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.23)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none;
+  }
+  .btn-secondary {
+    @apply bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium py-2.5 px-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+  .btn-danger {
+    @apply bg-danger hover:bg-danger-dark text-white font-medium py-2.5 px-5 rounded-xl shadow-[0_4px_14px_0_rgba(239,68,68,0.39)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.23)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none;
+  }
+  .btn-success {
+    @apply bg-success hover:bg-success-dark text-white font-medium py-2.5 px-5 rounded-xl shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Form Elements */
+  .input-field {
+    @apply w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-primary/20 dark:focus:ring-primary/30 focus:border-primary transition-all duration-200 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm font-medium shadow-sm;
+  }
+  
+  .label-field {
+    @apply block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5;
+  }
+
+  /* Table Specifics */
+  .table-row-hover {
+    @apply hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-default;
+  }
+
+  /* Scrollbar - Elegant minimal style */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-600 rounded-full border-2 border-transparent bg-clip-padding;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-500;
+  }
+  
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+  .dark .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* Recharts Premium Dark Mode & Tooltip Enhancements */
+.recharts-default-tooltip {
+  @apply !bg-white/95 dark:!bg-slate-900/95 !backdrop-blur-md !border-slate-100 dark:!border-slate-800 !rounded-xl !shadow-xl !p-4 !transition-all;
+}
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: #334155;
+  stroke-dasharray: 4 4;
+}
+.dark .recharts-text {
+  fill: #94a3b8;
+  font-size: 12px;
+}
+.recharts-text {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 12px;
+  fill: #64748b;
+}
+
+/* React DatePicker Premium Dark Mode */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+.react-datepicker {
+  @apply !bg-white dark:!bg-slate-900 !border-slate-200 dark:!border-slate-800 !rounded-xl !shadow-xl !font-sans;
+}
+.react-datepicker__header {
+  @apply !bg-slate-50 dark:!bg-slate-900/50 !border-b !border-slate-200 dark:!border-slate-800 !rounded-t-xl;
+}
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header,
+.react-datepicker__day-name {
+  @apply !text-slate-800 dark:!text-slate-200 !font-medium;
+}
+.react-datepicker__day {
+  @apply !text-slate-700 dark:!text-slate-300 hover:!bg-slate-100 dark:hover:!bg-slate-800 !rounded-lg !transition-colors;
+}
+.react-datepicker__day--selected, 
+.react-datepicker__day--keyboard-selected {
+  @apply !bg-primary !text-white hover:!bg-primary-dark !rounded-lg;
+}
+.react-datepicker__day--outside-month {
+  @apply !text-slate-300 dark:!text-slate-600;
+}
+.react-datepicker__triangle {
+  display: none;
+}

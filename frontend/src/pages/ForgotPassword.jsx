@@ -1,0 +1,43 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const ForgotPassword = () => {
+  return (
+    <div>
+      <h3 className="text-2xl font-semibold text-text mb-2">Reset your password</h3>
+      <p className="text-sm text-text-light mb-6">Enter your email and we'll send you a link to reset your password.</p>
+      
+      <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+        <div>
+          <label className="block text-sm font-medium text-text">Email address</label>
+          <div className="mt-1">
+            <input
+              type="email"
+              required
+              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+              placeholder="admin@svsfurniture.com"
+            />
+          </div>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+          >
+            Send Reset Link
+          </button>
+        </div>
+      </form>
+
+      <div className="mt-6 text-center text-sm text-text-light">
+        Remembered your password?{' '}
+        <Link to="/login" className="font-medium text-primary hover:text-primary-dark">
+          Back to login
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default ForgotPassword;
