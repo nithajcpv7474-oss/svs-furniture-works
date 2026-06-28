@@ -195,7 +195,7 @@ const AccordionSection = ({ title, icon: Icon, expanded, onToggle, children, sec
     ref={sectionRef}
     initial={false}
     animate={{ backgroundColor: expanded ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 0)' }}
-    className="card-premium relative mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl"
+    className="card-premium !overflow-visible relative mb-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] border border-slate-200/60 dark:border-slate-800/60 rounded-2xl"
   >
     <button 
       type="button"
