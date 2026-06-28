@@ -62,8 +62,9 @@ const resolveModuleFromPath = (path) => {
 
 export const requireRole = (allowedRoles) => (req, res, next) => {
   const role = req.user?.role; // from verified JWT only
+  const roleAlias = role === 'Manager' ? 'Management' : (role === 'Staff' ? 'Sales Staff' : role);
 
-  if (!role || !allowedRoles.includes(role)) {
+  if (!role || (!allowedRoles.includes(role) && !allowedRoles.includes(roleAlias))) {
     return res.status(403).json({
       error: 'Forbidden',
       message: 'You do not have permission to access this resource.'
@@ -73,7 +74,7 @@ export const requireRole = (allowedRoles) => (req, res, next) => {
   // Block write operations for view-only roles
   const moduleKey = resolveModuleFromPath(req.originalUrl);
   if (moduleKey) {
-    const permission = PERMISSIONS[role]?.[moduleKey];
+    const permission = PERMISSIONS[roleAlias]?.[moduleKey];
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && permission !== 'full') {
       return res.status(403).json({
         error: 'Forbidden',

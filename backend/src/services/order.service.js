@@ -246,6 +246,7 @@ export const updateOrderStatus = async (id, data, user) => {
 
       const allowedTargets = {
         'Sales Staff': ['Confirmed', 'OnHold', 'Cancelled'],
+        'Staff': ['Confirmed', 'OnHold', 'Cancelled'], // Alias for Sales Staff
         'Production Staff': ['InProduction', 'QualityCheck', 'ReadyForDelivery'],
         'Delivery Staff': ['Delivered']
       };
