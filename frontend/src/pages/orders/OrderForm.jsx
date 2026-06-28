@@ -338,14 +338,18 @@ const OrderForm = () => {
     height: '',
     measurementUnit: 'Inches',
     woodMaterial: '',
+    woodMaterialOther: '',
     finishType: '',
+    finishTypeOther: '',
     hardwareDetails: [],
     upholsteryRequired: false,
     upholsteryMaterial: '',
     upholsteryColor: '',
     polishColor: '',
+    polishColorOther: '',
     glassRequired: false,
     glassType: '',
+    glassTypeOther: '',
     accessories: [],
     estimatedPrice: '',
     advanceAmount: '',
@@ -497,7 +501,14 @@ const OrderForm = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
+    setFormData(prev => {
+      const newData = { ...prev, [name]: type === 'checkbox' ? checked : value };
+      if (name === 'woodMaterial' && value !== 'others') newData.woodMaterialOther = '';
+      if (name === 'finishType' && value !== 'others') newData.finishTypeOther = '';
+      if (name === 'polishColor' && value !== 'others') newData.polishColorOther = '';
+      if (name === 'glassType' && value !== 'others') newData.glassTypeOther = '';
+      return newData;
+    });
   };
 
   const handleFileChange = (e) => {
@@ -570,17 +581,42 @@ const OrderForm = () => {
       }
     }
 
+    let inlineErrors = {};
+    if (!formData.woodMaterial) inlineErrors.woodMaterial = 'Please select a wood/base material';
+    if (formData.woodMaterial === 'others' && !formData.woodMaterialOther.trim()) inlineErrors.woodMaterialOther = 'Please specify the material name';
+    
+    if (!formData.finishType) inlineErrors.finishType = 'Please select a finish type';
+    if (formData.finishType === 'others' && !formData.finishTypeOther.trim()) inlineErrors.finishTypeOther = 'Please specify the finish type';
+    
+    if (!formData.polishColor) inlineErrors.polishColor = 'Please select a polish color';
+    if (formData.polishColor === 'others' && !formData.polishColorOther.trim()) inlineErrors.polishColorOther = 'Please specify the polish color';
+    
+    if (formData.glassRequired) {
+      if (!formData.glassType) inlineErrors.glassType = 'Please select a glass type';
+      if (formData.glassType === 'others' && !formData.glassTypeOther.trim()) inlineErrors.glassTypeOther = 'Please specify the glass type';
+    }
+
+    if (Object.keys(inlineErrors).length > 0) {
+      setFieldErrors(inlineErrors);
+      return;
+    }
+
     setSubmitting(true);
 
     const submissionData = new FormData();
     Object.keys(formData).forEach(key => {
-      if (formData[key] !== null && formData[key] !== undefined) {
+      if (formData[key] !== null && formData[key] !== undefined && !key.endsWith('Other')) {
         // Map custom values if "Other" is selected
         let finalValue = formData[key];
         if (key === 'furnitureCategory' && isCustomCategory) finalValue = customCategory.trim();
         if (key === 'furnitureName' && isCustomItem) finalValue = customItem.trim();
         if (key === 'upholsteryMaterial' && isCustomFabric) finalValue = customFabric.trim();
         if (key === 'upholsteryColor' && isCustomColor) finalValue = customColor.trim();
+        
+        if (key === 'woodMaterial' && formData.woodMaterial === 'others') finalValue = formData.woodMaterialOther.trim();
+        if (key === 'finishType' && formData.finishType === 'others') finalValue = formData.finishTypeOther.trim();
+        if (key === 'polishColor' && formData.polishColor === 'others') finalValue = formData.polishColorOther.trim();
+        if (key === 'glassType' && formData.glassType === 'others') finalValue = formData.glassTypeOther.trim();
         
         // Remove empty 'Other (please specify)' placeholders
         if (key === 'hardwareDetails') {
@@ -902,22 +938,108 @@ const OrderForm = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">Wood / Base Material</label>
-              <input name="woodMaterial" value={formData.woodMaterial} onChange={handleChange} placeholder="e.g. Teak Wood, Plywood" className="input-field" />
+              <select name="woodMaterial" value={formData.woodMaterial} onChange={handleChange} className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.woodMaterial ? 'border-red-500 focus:ring-red-500/20' : ''}`}>
+                <option value="">-- Select --</option>
+                <option value="Teak Wood">Teak Wood</option>
+                <option value="Rosewood">Rosewood</option>
+                <option value="Sheesham Wood">Sheesham Wood</option>
+                <option value="Mango Wood">Mango Wood</option>
+                <option value="Pine Wood">Pine Wood</option>
+                <option value="Plywood">Plywood</option>
+                <option value="MDF Board">MDF Board</option>
+                <option value="Blockboard">Blockboard</option>
+                <option value="Particle Board">Particle Board</option>
+                <option value="Solid Hardwood">Solid Hardwood</option>
+                <option value="others">Others (specify)</option>
+              </select>
+              {fieldErrors.woodMaterial && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.woodMaterial}</p>}
+              {formData.woodMaterial === 'others' && (
+                <div className="mt-2">
+                  <input name="woodMaterialOther" value={formData.woodMaterialOther} onChange={handleChange} placeholder="Enter wood or base material name" className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.woodMaterialOther ? 'border-red-500 focus:ring-red-500/20' : ''}`} />
+                  {fieldErrors.woodMaterialOther && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.woodMaterialOther}</p>}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1.5">Finish Type & Polish Color</label>
               <div className="flex gap-2">
-                <input name="finishType" value={formData.finishType} onChange={handleChange} placeholder="e.g. PU, Melamine" className="input-field" />
-                <input name="polishColor" value={formData.polishColor} onChange={handleChange} placeholder="e.g. Walnut" className="input-field" />
+                <div className="flex-1">
+                  <select name="finishType" value={formData.finishType} onChange={handleChange} className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.finishType ? 'border-red-500 focus:ring-red-500/20' : ''}`}>
+                    <option value="">-- Select --</option>
+                    <option value="PU Finish">PU Finish</option>
+                    <option value="Melamine Finish">Melamine Finish</option>
+                    <option value="Lacquer Finish">Lacquer Finish</option>
+                    <option value="NC Polish">NC Polish</option>
+                    <option value="Duco Paint">Duco Paint</option>
+                    <option value="Veneer Finish">Veneer Finish</option>
+                    <option value="Laminate Finish">Laminate Finish</option>
+                    <option value="Oil Finish">Oil Finish</option>
+                    <option value="Wax Polish">Wax Polish</option>
+                    <option value="Raw / Unfinished">Raw / Unfinished</option>
+                    <option value="others">Others (specify)</option>
+                  </select>
+                  {fieldErrors.finishType && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.finishType}</p>}
+                  {formData.finishType === 'others' && (
+                    <div className="mt-2">
+                      <input name="finishTypeOther" value={formData.finishTypeOther} onChange={handleChange} placeholder="Enter finish type name" className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.finishTypeOther ? 'border-red-500 focus:ring-red-500/20' : ''}`} />
+                      {fieldErrors.finishTypeOther && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.finishTypeOther}</p>}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <select name="polishColor" value={formData.polishColor} onChange={handleChange} className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.polishColor ? 'border-red-500 focus:ring-red-500/20' : ''}`}>
+                    <option value="">-- Select --</option>
+                    <option value="Walnut">Walnut</option>
+                    <option value="Mahogany">Mahogany</option>
+                    <option value="Ebony">Ebony</option>
+                    <option value="Natural / Clear">Natural / Clear</option>
+                    <option value="White">White</option>
+                    <option value="Ivory">Ivory</option>
+                    <option value="Dark Oak">Dark Oak</option>
+                    <option value="Cherry">Cherry</option>
+                    <option value="Grey">Grey</option>
+                    <option value="Black">Black</option>
+                    <option value="others">Others (specify)</option>
+                  </select>
+                  {fieldErrors.polishColor && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.polishColor}</p>}
+                  {formData.polishColor === 'others' && (
+                    <div className="mt-2">
+                      <input name="polishColorOther" value={formData.polishColorOther} onChange={handleChange} placeholder="Enter polish color name" className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.polishColorOther ? 'border-red-500 focus:ring-red-500/20' : ''}`} />
+                      {fieldErrors.polishColorOther && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.polishColorOther}</p>}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 border p-4 rounded-lg">
+            <div className="flex flex-col gap-2 border p-4 rounded-lg bg-slate-50 dark:bg-slate-950/50 dark:border-slate-800">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" name="glassRequired" checked={formData.glassRequired} onChange={handleChange} className="w-4 h-4 text-primary rounded focus:ring-primary" />
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Glass Work Required</span>
               </label>
               {formData.glassRequired && (
-                <input name="glassType" value={formData.glassType} onChange={handleChange} placeholder="Glass Type (e.g. 12mm Toughened)" className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary sm:text-sm" />
+                <div className="mt-2">
+                  <select name="glassType" value={formData.glassType} onChange={handleChange} className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.glassType ? 'border-red-500 focus:ring-red-500/20' : ''}`}>
+                    <option value="">-- Select --</option>
+                    <option value="4mm Clear Glass">4mm Clear Glass</option>
+                    <option value="6mm Clear Glass">6mm Clear Glass</option>
+                    <option value="8mm Clear Glass">8mm Clear Glass</option>
+                    <option value="12mm Toughened Glass">12mm Toughened Glass</option>
+                    <option value="6mm Frosted Glass">6mm Frosted Glass</option>
+                    <option value="8mm Frosted Glass">8mm Frosted Glass</option>
+                    <option value="Mirror Glass">Mirror Glass</option>
+                    <option value="Bronze Tinted Glass">Bronze Tinted Glass</option>
+                    <option value="Lacquered Glass">Lacquered Glass</option>
+                    <option value="Back Painted Glass">Back Painted Glass</option>
+                    <option value="others">Others (specify)</option>
+                  </select>
+                  {fieldErrors.glassType && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.glassType}</p>}
+                  {formData.glassType === 'others' && (
+                    <div className="mt-2">
+                      <input name="glassTypeOther" value={formData.glassTypeOther} onChange={handleChange} placeholder="Enter glass type and thickness" className={`input-field bg-white dark:bg-slate-900 ${fieldErrors.glassTypeOther ? 'border-red-500 focus:ring-red-500/20' : ''}`} />
+                      {fieldErrors.glassTypeOther && <p className="text-xs text-red-500 mt-1 font-medium">{fieldErrors.glassTypeOther}</p>}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
