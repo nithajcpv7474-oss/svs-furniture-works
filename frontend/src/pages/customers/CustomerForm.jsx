@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useFormErrors } from '../../hooks/useFormErrors';
 import { FormAlert } from '../../components/ui/FormAlert';
+import { getCustomerById, createCustomer, updateCustomer } from '../../services/customer.service';
 
 const CustomerForm = () => {
   const { id } = useParams();
