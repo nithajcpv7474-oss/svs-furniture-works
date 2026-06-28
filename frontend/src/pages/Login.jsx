@@ -151,8 +151,8 @@ const Login = () => {
 
       let isRoleValid = false;
       if (selectedRole === 'Admin' && actualRole === 'Admin') isRoleValid = true;
-      else if (selectedRole === 'Manager' && actualRole === 'Management') isRoleValid = true;
-      else if (selectedRole === 'Staff' && ['Sales Staff', 'Production Staff', 'Delivery Staff'].includes(actualRole)) isRoleValid = true;
+      else if (selectedRole === 'Manager' && ['Management', 'Manager'].includes(actualRole)) isRoleValid = true;
+      else if (selectedRole === 'Staff' && ['Sales Staff', 'Production Staff', 'Delivery Staff', 'Staff'].includes(actualRole)) isRoleValid = true;
 
       if (!isRoleValid) {
         await logout();
