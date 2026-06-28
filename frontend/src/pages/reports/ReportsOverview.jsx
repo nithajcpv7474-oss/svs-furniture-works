@@ -262,24 +262,9 @@ const ReportsOverview = () => {
           </div>
           <div className="h-72">
             {!loading && data ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data.trends.revenueForecast} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.5}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 11, fontWeight: 'bold'}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748B', fontSize: 11, fontWeight: 'bold'}} tickFormatter={(val) => `₹${val/1000}k`} dx={-10} />
-                  <Tooltip 
-                    formatter={(val) => formatRupee(val)}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#020617', color: '#fff', fontWeight: 'bold' }}
-                  />
-                  <Area type="monotone" dataKey="actual" stroke="#8B5CF6" strokeWidth={4} fill="url(#colorRev)" />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold border border-dashed border-slate-700 rounded-2xl">
+                AreaChart Placeholder
+              </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold">Loading Engine...</div>
             )}

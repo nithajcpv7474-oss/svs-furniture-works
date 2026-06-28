@@ -12,7 +12,7 @@ export const getHomeRoute = (role) => {
 
   // Priority-ordered list of modules → routes
   const candidates = [
-    { module: 'dashboard',           path: '/' },
+    { module: 'dashboard',           path: '/dashboard' },
     { module: 'customers',           path: '/customers' },
     { module: 'orders',              path: '/orders' },
     { module: 'specificationSheets', path: '/orders' },   // no dedicated spec-sheet list page
