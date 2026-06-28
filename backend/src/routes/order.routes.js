@@ -4,7 +4,9 @@ import {
   getOrderById,
   createOrder,
   updateOrder,
-  deleteOrder
+  deleteOrder,
+  updateOrderStatus,
+  getOrderStatusHistory
 } from '../controllers/order.controller.js';
 import { verifyToken, requireRole } from '../middlewares/auth.middleware.js';
 import { upload, optimizeImages } from '../middlewares/upload.middleware.js';
@@ -32,8 +34,10 @@ const cpUpload = upload.fields([
 
 router.get('/', getOrders);
 router.get('/:id', getOrderById);
+router.get('/:id/history', getOrderStatusHistory);
 router.post('/', cpUpload, optimizeImages, validate(orderSchema), createOrder);
 router.put('/:id', cpUpload, optimizeImages, validate(orderSchema), updateOrder);
+router.patch('/:id/status', updateOrderStatus);
 router.delete('/:id', deleteOrder);
 
 export default router;

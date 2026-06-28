@@ -114,14 +114,45 @@ export const notifyCompletedOrder = async (order) => {
   });
 };
 
-export const notifyOrderStatusChange = async (order, newStatus) => {
-  return createNotification({
-    title: 'Order Status Updated',
-    message: `Order ${order.orderNumber} status changed to ${newStatus}.`,
-    type: 'ORDER_STATUS_CHANGE',
-    priority: 'medium',
-    referenceId: order.id
+export const notifyOrderStatusChange = async (order, newStatus, reason = null) => {
+  let message = '';
+  const customerName = order.customer ? order.customer.fullName : 'Customer';
+  
+  switch(newStatus) {
+    case 'Confirmed': message = `${order.orderNumber} confirmed — production can begin`; break;
+    case 'InProduction': message = `${order.orderNumber} is now in production`; break;
+    case 'QualityCheck': message = `${order.orderNumber} is ready for quality inspection`; break;
+    case 'ReadyForDelivery': message = `${order.orderNumber} is ready for delivery`; break;
+    case 'Delivered': message = `${order.orderNumber} has been delivered to ${customerName}`; break;
+    case 'Completed': message = `${order.orderNumber} is completed — full payment received`; break;
+    case 'OnHold': message = `${order.orderNumber} is on hold — ${reason || 'No reason provided'}`; break;
+    case 'Cancelled': message = `${order.orderNumber} has been cancelled — ${reason || 'No reason provided'}`; break;
+    default: message = `Order ${order.orderNumber} status changed to ${newStatus}`;
+  }
+
+  const rolesToNotify = ['Admin', 'Management'];
+  if (['Confirmed', 'Delivered', 'Completed', 'Cancelled'].includes(newStatus)) rolesToNotify.push('Sales Staff');
+  if (['InProduction', 'QualityCheck', 'ReadyForDelivery'].includes(newStatus)) rolesToNotify.push('Production Staff');
+  if (['ReadyForDelivery', 'Delivered'].includes(newStatus)) rolesToNotify.push('Delivery Staff');
+
+  const users = await prisma.user.findMany({
+    where: { role: { in: rolesToNotify }, isActive: true },
+    select: { id: true }
   });
+
+  const promises = users.map(user => 
+    createNotification({
+      title: 'Order Status Updated',
+      message,
+      type: 'ORDER_STATUS_CHANGE',
+      priority: ['Cancelled', 'OnHold'].includes(newStatus) ? 'high' : 'medium',
+      referenceId: order.id,
+      userId: user.id
+    })
+  );
+
+  await Promise.all(promises);
+  return true;
 };
 
 export const notifyLowStock = async (material) => {

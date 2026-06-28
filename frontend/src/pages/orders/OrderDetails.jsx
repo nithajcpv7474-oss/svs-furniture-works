@@ -5,6 +5,11 @@ import { getOrderById } from '../../services/order.service';
 import { createProductionJob } from '../../services/production.service';
 import { ArrowLeft, Edit2, Printer, CheckCircle, Package, User, MapPin, IndianRupee, Loader2, Image as ImageIcon, Hammer } from 'lucide-react';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { useAuth } from '../../context/AuthContext';
+import { OrderProgressTracker } from './OrderProgressTracker';
+import { OrderStatusHistoryList } from './OrderStatusHistoryList';
+import { OrderStatusModal } from './OrderStatusModal';
+import { updateOrderStatus } from '../../services/order.service';
 
 const OrderDetails = () => {
   const permission = usePermission('orders');
@@ -13,6 +18,8 @@ const OrderDetails = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startingProduction, setStartingProduction] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -44,6 +51,12 @@ const OrderDetails = () => {
     } finally {
       setStartingProduction(false);
     }
+  };
+
+  const handleUpdateStatus = async (id, payload) => {
+    const updated = await updateOrderStatus(id, payload);
+    const refreshedOrder = await getOrderById(id);
+    setOrder(refreshedOrder);
   };
 
   if (loading) {
@@ -111,7 +124,14 @@ const OrderDetails = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4">
+      <OrderProgressTracker 
+        currentStatus={order.orderStatus} 
+        history={order.statusHistory} 
+        onEditClick={() => setIsStatusModalOpen(true)}
+        permission={permission}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:gap-4 mb-6">
         
         {/* Customer & Delivery */}
         <div className="card-premium p-6 print:shadow-none print:border-slate-300">
@@ -292,11 +312,23 @@ const OrderDetails = () => {
           </div>
           <div className="text-center">
             <div className="w-48 border-b border-slate-400 mb-2 h-12"></div>
-            <p className="text-sm text-slate-600 dark:text-slate-300">Authorized Signatory</p>
+            <p className="mt-8 text-center text-slate-400">Authorized Signatory</p>
           </div>
         </div>
       </div>
       
+      {/* Status History Timeline */}
+      <div className="mt-6">
+        <OrderStatusHistoryList history={order.statusHistory} />
+      </div>
+
+      <OrderStatusModal 
+        isOpen={isStatusModalOpen}
+        onClose={() => setIsStatusModalOpen(false)}
+        order={order}
+        userRole={user?.role}
+        onUpdate={handleUpdateStatus}
+      />
     </div>
   );
 };

@@ -96,3 +96,35 @@ export const deleteOrder = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete order.' });
   }
 };
+
+export const updateOrderStatus = async (req, res) => {
+  try {
+    const { status, notes, reason, paymentAmount, paymentMode, paymentReference } = req.body;
+    if (!status) return res.status(400).json({ message: 'Status is required' });
+
+    const order = await orderService.getOrderById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const updatedOrder = await orderService.updateOrderStatus(req.params.id, {
+      status, notes, reason, paymentAmount, paymentMode, paymentReference
+    }, req.user);
+
+    await notifyOrderStatusChange(updatedOrder, status, reason);
+    logAction({ userId: req.user.id, action: 'Update Status', module: 'Orders', oldValue: { status: order.orderStatus }, newValue: { status }, req });
+
+    res.status(200).json({ message: 'Order status updated successfully', data: updatedOrder });
+  } catch (error) {
+    console.error('updateOrderStatus Error:', error);
+    res.status(400).json({ message: error.message || 'Failed to update order status' });
+  }
+};
+
+export const getOrderStatusHistory = async (req, res) => {
+  try {
+    const history = await orderService.getOrderStatusHistory(req.params.id);
+    res.status(200).json({ data: history });
+  } catch (error) {
+    console.error('getOrderStatusHistory Error:', error);
+    res.status(500).json({ message: 'Failed to fetch status history' });
+  }
+};

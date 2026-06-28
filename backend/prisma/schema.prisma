@@ -31,6 +31,8 @@ model User {
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
   auditLogs               AuditLog[]
+  orderStatusChanges      OrderStatusHistory[]
+  passwordResetTokens     PasswordResetToken[]
 }
 
 enum CustomerType {
@@ -77,6 +79,8 @@ enum OrderStatus {
   QualityCheck
   ReadyForDelivery
   Delivered
+  Completed
+  OnHold
   Cancelled
 }
 
@@ -126,6 +130,7 @@ model Order {
   orderMaterials       OrderMaterial[]
   productionJob        ProductionJob?
   delivery             Delivery?
+  statusHistory        OrderStatusHistory[]
 
   @@index([customerId])
   @@index([orderStatus, isDeleted])
@@ -451,3 +456,29 @@ model AuditLog {
   @@index([createdAt])
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+}
+
+model OrderStatusHistory {
+  id          String       @id @default(uuid())
+  orderId     String
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus
+  changedBy   String
+  changedAt   DateTime     @default(now())
+  notes       String?
+  reason      String?
+  order       Order        @relation(fields: [orderId], references: [id])
+  user        User         @relation(fields: [changedBy], references: [id])
+
+  @@index([orderId])
+  @@index([changedAt])
+}

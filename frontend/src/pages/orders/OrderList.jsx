@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { usePermission } from '../../hooks/usePermission';
 import { useNavigate } from 'react-router-dom';
-import { getOrders, deleteOrder } from '../../services/order.service';
+import { getOrders, deleteOrder, updateOrderStatus } from '../../services/order.service';
 import { DataTable } from '../../components/ui/DataTable';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { Modal } from '../../components/ui/Modal';
@@ -10,6 +10,8 @@ import {
   TrendingUp, Clock, PackageCheck, ShoppingCart, Activity 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { OrderStatusModal } from './OrderStatusModal';
+import { useAuth } from '../../context/AuthContext';
 
 const OrderList = () => {
   const permission = usePermission('orders');
@@ -19,6 +21,8 @@ const OrderList = () => {
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All Orders');
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const { user } = useAuth();
   
   // Stats state
   const [stats, setStats] = useState({
@@ -28,13 +32,18 @@ const OrderList = () => {
     delivered: 0
   });
 
-  const FILTERS = ['All Orders', 'Pending', 'Confirmed', 'InProduction', 'Delivered'];
+  const FILTERS = ['All Orders', 'Pending', 'Confirmed', 'InProduction', 'QualityCheck', 'ReadyForDelivery', 'Delivered', 'Completed', 'OnHold', 'Cancelled'];
   const FILTER_LABELS = {
-    'All Orders': 'All Orders',
+    'All Orders': 'All',
     'Pending': 'Pending',
     'Confirmed': 'Confirmed',
     'InProduction': 'Production',
-    'Delivered': 'Delivered'
+    'QualityCheck': 'Quality Check',
+    'ReadyForDelivery': 'Ready',
+    'Delivered': 'Delivered',
+    'Completed': 'Completed',
+    'OnHold': 'On Hold',
+    'Cancelled': 'Cancelled'
   };
 
   useEffect(() => {
@@ -66,9 +75,9 @@ const OrderList = () => {
       let delivered = 0;
 
       allData.forEach(o => {
-        if (o.orderStatus === 'Pending') pending++;
-        if (o.orderStatus === 'InProduction') production++;
-        if (o.orderStatus === 'Delivered') delivered++;
+        if (o.orderStatus === 'Pending' || o.orderStatus === 'OnHold') pending++;
+        if (o.orderStatus === 'InProduction' || o.orderStatus === 'QualityCheck') production++;
+        if (o.orderStatus === 'Delivered' || o.orderStatus === 'Completed') delivered++;
       });
 
       setStats({
@@ -168,9 +177,9 @@ const OrderList = () => {
           
           {permission === 'full' && (<motion.button 
             whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(`/orders/${row.id}/edit`)} 
+            onClick={() => setSelectedOrder(row)} 
             className="p-2 text-purple-500 bg-purple-50 dark:bg-purple-500/10 hover:bg-purple-500 hover:text-white dark:hover:bg-purple-500 dark:hover:text-white hover:shadow-[0_0_12px_rgba(168,85,247,0.5)] rounded-xl transition-all" 
-            title="Edit"
+            title="Update Status"
           >
             <Edit size={18} />
           </motion.button>)}
@@ -367,6 +376,17 @@ const OrderList = () => {
         </div>
       </Modal>
 
+      <OrderStatusModal 
+        isOpen={!!selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        order={selectedOrder}
+        userRole={user?.role}
+        onUpdate={async (id, payload) => {
+          await updateOrderStatus(id, payload);
+          fetchOrders();
+          fetchStats();
+        }}
+      />
     </motion.div>
   );
 };

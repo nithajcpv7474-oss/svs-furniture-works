@@ -33,7 +33,11 @@ export const getOrderById = async (id) => {
     where: { id, isDeleted: false },
     include: { 
       customer: true,
-      orderMaterials: { include: { material: true } }
+      orderMaterials: { include: { material: true } },
+      statusHistory: {
+        orderBy: { changedAt: 'desc' },
+        include: { user: { select: { fullName: true, role: true } } }
+      }
     }
   });
 };
@@ -211,5 +215,92 @@ export const deleteOrder = async (id) => {
   return prisma.order.update({
     where: { id },
     data: { isDeleted: true },
+  });
+};
+
+export const updateOrderStatus = async (id, data, user) => {
+  return await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({ where: { id } });
+    if (!order) throw new Error('Order not found');
+
+    const fromStatus = order.orderStatus;
+    const toStatus = data.status;
+
+    // Validation
+    if (user.role !== 'Admin') {
+      const validTransitions = {
+        'Pending':        ['Confirmed', 'OnHold', 'Cancelled'],
+        'Confirmed':      ['InProduction', 'OnHold', 'Cancelled'],
+        'InProduction':   ['QualityCheck', 'OnHold', 'Cancelled'],
+        'QualityCheck':   ['ReadyForDelivery', 'InProduction', 'OnHold', 'Cancelled'],
+        'ReadyForDelivery': ['Delivered', 'OnHold', 'Cancelled'],
+        'Delivered':      ['Completed'],
+        'Completed':      [], 
+        'OnHold':         ['Pending', 'Confirmed', 'InProduction', 'QualityCheck', 'ReadyForDelivery', 'Cancelled'],
+        'Cancelled':      [], 
+      };
+
+      if (!validTransitions[fromStatus]?.includes(toStatus)) {
+        throw new Error(`Invalid status transition from ${fromStatus} to ${toStatus}`);
+      }
+
+      const allowedTargets = {
+        'Sales Staff': ['Confirmed', 'OnHold', 'Cancelled'],
+        'Production Staff': ['InProduction', 'QualityCheck', 'ReadyForDelivery'],
+        'Delivery Staff': ['Delivered']
+      };
+      
+      const roleTargets = allowedTargets[user.role] || [];
+      if (!roleTargets.includes(toStatus)) {
+        throw new Error(`User role ${user.role} is not permitted to transition order to ${toStatus}`);
+      }
+    }
+
+    if ((toStatus === 'Cancelled' || toStatus === 'OnHold') && (!data.reason || !data.reason.trim())) {
+      throw new Error(`Reason is required when moving to ${toStatus}`);
+    }
+
+    const updateData = { orderStatus: toStatus };
+    let paymentNote = '';
+    if (data.paymentAmount) {
+      const amount = parseFloat(data.paymentAmount);
+      updateData.advanceAmount = order.advanceAmount + amount;
+      updateData.balanceAmount = Math.max(0, order.balanceAmount - amount);
+      paymentNote = `Payment received: ₹${amount} via ${data.paymentMode || 'Unknown'}`;
+      if (data.paymentReference) paymentNote += ` (Ref: ${data.paymentReference})`;
+    }
+
+    const updatedOrder = await tx.order.update({
+      where: { id },
+      data: updateData
+    });
+
+    let finalNotes = data.notes || '';
+    if (paymentNote) {
+      finalNotes = finalNotes ? `${finalNotes} | ${paymentNote}` : paymentNote;
+    }
+
+    await tx.orderStatusHistory.create({
+      data: {
+        orderId: id,
+        fromStatus,
+        toStatus,
+        changedBy: user.id,
+        notes: finalNotes || null,
+        reason: data.reason || null
+      }
+    });
+
+    return updatedOrder;
+  });
+};
+
+export const getOrderStatusHistory = async (id) => {
+  return prisma.orderStatusHistory.findMany({
+    where: { orderId: id },
+    orderBy: { changedAt: 'desc' },
+    include: {
+      user: { select: { fullName: true, role: true } }
+    }
   });
 };
