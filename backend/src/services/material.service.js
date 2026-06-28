@@ -50,13 +50,13 @@ export const createMaterial = async (data, files) => {
 
   let nextNumber = 1;
   if (lastMaterial && lastMaterial.materialCode.startsWith('MAT')) {
-    const lastNumberStr = lastMaterial.materialCode.replace('MAT', '');
+    const lastNumberStr = lastMaterial.materialCode.replace('MAT-', '').replace('MAT', '');
     const lastNumber = parseInt(lastNumberStr, 10);
-    if (!isNaN(lastNumber)) {
+    if (!isNaN(lastNumber) && lastNumber > 0) {
       nextNumber = lastNumber + 1;
     }
   }
-  const materialCode = `MAT${nextNumber.toString().padStart(4, '0')}`;
+  const materialCode = `MAT-${nextNumber.toString().padStart(4, '0')}`;
 
   const image = files?.image ? files.image[0].filename : null;
 
