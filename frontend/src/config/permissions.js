@@ -60,3 +60,7 @@ export const PERMISSIONS = {
     userManagement:      'none',
   },
 };
+
+// Aliases for roles that might exist in the database from seeds
+PERMISSIONS['Manager'] = PERMISSIONS['Management'];
+PERMISSIONS['Staff'] = PERMISSIONS['Sales Staff'];

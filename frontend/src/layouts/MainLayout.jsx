@@ -59,7 +59,7 @@ const MainLayout = () => {
     }
   ];
 
-  const userPermissions = user?.role ? PERMISSIONS[user.role] : {};
+  const userPermissions = user?.role ? (PERMISSIONS[user.role] || {}) : {};
 
   const navGroups = rawNavGroups.map(group => ({
     ...group,
