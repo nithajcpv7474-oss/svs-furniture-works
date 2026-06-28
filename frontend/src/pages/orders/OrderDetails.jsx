@@ -2,7 +2,8 @@ import { usePermission } from '../../hooks/usePermission';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getOrderById } from '../../services/order.service';
-import { ArrowLeft, Edit2, Printer, CheckCircle, Package, User, MapPin, IndianRupee, Loader2, Image as ImageIcon } from 'lucide-react';
+import { createProductionJob } from '../../services/production.service';
+import { ArrowLeft, Edit2, Printer, CheckCircle, Package, User, MapPin, IndianRupee, Loader2, Image as ImageIcon, Hammer } from 'lucide-react';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 
 const OrderDetails = () => {
@@ -11,6 +12,7 @@ const OrderDetails = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [startingProduction, setStartingProduction] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -28,6 +30,20 @@ const OrderDetails = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleStartProduction = async () => {
+    if (!window.confirm("Are you sure you want to push this order to production?")) return;
+    setStartingProduction(true);
+    try {
+      await createProductionJob({ orderId: order.id, priority: 'Medium' });
+      alert('Production job created successfully! The order is now in production.');
+      window.location.reload();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to start production. Check if stock is sufficient.');
+    } finally {
+      setStartingProduction(false);
+    }
   };
 
   if (loading) {
@@ -67,6 +83,11 @@ const OrderDetails = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          {order.orderStatus !== 'InProduction' && order.orderStatus !== 'Completed' && order.orderStatus !== 'Delivered' && order.orderStatus !== 'Cancelled' && (
+            <button onClick={handleStartProduction} disabled={startingProduction} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm disabled:opacity-50">
+              <Hammer size={16} /> {startingProduction ? 'Starting...' : 'Start Production'}
+            </button>
+          )}
           <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 rounded-lg transition-colors font-medium text-sm shadow-sm">
             <Printer size={16} /> Print Spec
           </button>
