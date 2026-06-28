@@ -12,6 +12,7 @@ import {
 import { motion } from 'framer-motion';
 import { OrderStatusModal } from './OrderStatusModal';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const OrderList = () => {
   const permission = usePermission('orders');
@@ -383,6 +384,7 @@ const OrderList = () => {
         userRole={user?.role}
         onUpdate={async (id, payload) => {
           await updateOrderStatus(id, payload);
+          toast.success(`Order moved to ${payload.status}`);
           fetchOrders();
           fetchStats();
         }}

@@ -2,12 +2,15 @@ import React from 'react';
 
 const statusStyles = {
   // Common / Orders
-  'Pending': 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-[0_0_10px_rgba(245,158,11,0.4)] border-transparent',
-  'Confirmed': 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.4)] border-transparent',
-  'InProduction': 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)] border-transparent',
-  'ReadyForDelivery': 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)] border-transparent',
-  'Delivered': 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] border-transparent',
-  'Cancelled': 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)] border-transparent',
+  'Pending': 'bg-orange-500 text-white border-transparent',
+  'Confirmed': 'bg-blue-500 text-white border-transparent',
+  'InProduction': 'bg-purple-500 text-white border-transparent',
+  'QualityCheck': 'bg-yellow-500 text-black border-transparent',
+  'ReadyForDelivery': 'bg-teal-500 text-white border-transparent',
+  'Delivered': 'bg-green-500 text-white border-transparent',
+  'Completed': 'bg-emerald-600 text-white border-transparent',
+  'OnHold': 'bg-gray-500 text-white border-transparent',
+  'Cancelled': 'bg-red-500 text-white border-transparent',
 
   // Other Statuses (Mapping to new styles)
   'Scheduled': 'bg-gradient-to-r from-blue-400 to-indigo-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.3)] border-transparent',
