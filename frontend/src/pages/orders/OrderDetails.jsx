@@ -207,12 +207,15 @@ const OrderDetails = () => {
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {order.orderMaterials.map((om, idx) => (
                     <tr key={idx}>
-                      <td className="px-4 py-2">{om.material.materialCode}</td>
-                      <td className="px-4 py-2 font-medium">{om.material.materialName}</td>
-                      <td className="px-4 py-2 text-right font-bold">{om.quantityRequired} {om.material.unit}</td>
-                      <td className={`px-4 py-2 text-right font-medium ${om.material.availableStock >= om.quantityRequired ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {om.material.availableStock} {om.material.unit}
-                        {om.material.availableStock < om.quantityRequired && (
+                      <td className="px-4 py-2">{om.material ? om.material.materialCode : 'CUSTOM'}</td>
+                      <td className="px-4 py-2 font-medium">
+                        {om.material ? om.material.materialName : om.customMaterialName}
+                        {!om.material && <span className="ml-2 px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400">Custom</span>}
+                      </td>
+                      <td className="px-4 py-2 text-right font-bold">{om.quantityRequired} {om.material ? om.material.unit : 'Units'}</td>
+                      <td className={`px-4 py-2 text-right font-medium ${!om.material || om.material.availableStock >= om.quantityRequired ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {om.material ? `${om.material.availableStock} ${om.material.unit}` : 'N/A'}
+                        {om.material && om.material.availableStock < om.quantityRequired && (
                           <span className="block text-xs font-bold text-red-500">Insufficient</span>
                         )}
                       </td>

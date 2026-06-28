@@ -49,10 +49,19 @@ export const createOrder = async (data, files, createdBy) => {
     try {
       const parsedMaterials = JSON.parse(data.orderMaterials);
       if (Array.isArray(parsedMaterials)) {
-        orderMaterials = parsedMaterials.map(m => ({
-          materialId: m.materialId,
-          quantityRequired: parseFloat(m.quantityRequired)
-        }));
+        orderMaterials = parsedMaterials.map(m => {
+          if (m.materialId === 'others') {
+            return {
+              materialId: null,
+              customMaterialName: m.customMaterial,
+              quantityRequired: parseFloat(m.quantityRequired)
+            };
+          }
+          return {
+            materialId: m.materialId,
+            quantityRequired: parseFloat(m.quantityRequired)
+          };
+        });
       }
     } catch (err) {
       console.error('Error parsing orderMaterials', err);
@@ -172,10 +181,19 @@ export const updateOrder = async (id, data, files) => {
       if (Array.isArray(parsedMaterials)) {
         updateData.orderMaterials = {
           deleteMany: {},
-          create: parsedMaterials.map(m => ({
-            materialId: m.materialId,
-            quantityRequired: parseFloat(m.quantityRequired)
-          }))
+          create: parsedMaterials.map(m => {
+            if (m.materialId === 'others') {
+              return {
+                materialId: null,
+                customMaterialName: m.customMaterial,
+                quantityRequired: parseFloat(m.quantityRequired)
+              };
+            }
+            return {
+              materialId: m.materialId,
+              quantityRequired: parseFloat(m.quantityRequired)
+            };
+          })
         };
       }
     } catch (err) {

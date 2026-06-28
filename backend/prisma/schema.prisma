@@ -188,14 +188,15 @@ model InventoryTransaction {
 }
 
 model OrderMaterial {
-  id               String   @id @default(uuid())
-  orderId          String
-  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  materialId       String
-  material         Material @relation(fields: [materialId], references: [id])
-  quantityRequired Float
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  orderId            String
+  order              Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  materialId         String?
+  material           Material? @relation(fields: [materialId], references: [id])
+  customMaterialName String?
+  quantityRequired   Float
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([orderId])
   @@index([materialId])

@@ -473,7 +473,8 @@ const OrderForm = () => {
         });
         if (data.orderMaterials) {
           setOrderMaterials(data.orderMaterials.map(om => ({
-            materialId: om.materialId,
+            materialId: om.materialId || 'others',
+            customMaterial: om.customMaterialName || '',
             quantityRequired: om.quantityRequired
           })));
         }
@@ -524,6 +525,24 @@ const OrderForm = () => {
     if (isCustomItem && !customItem.trim()) {
       showToast('Please specify the custom item name.', 'error');
       return;
+    }
+
+    // Validation for BOM
+    if (orderMaterials.length > 0) {
+      for (const om of orderMaterials) {
+        if (!om.materialId) {
+          showToast('Please select a material for all BOM rows.', 'error');
+          return;
+        }
+        if (om.materialId === 'others' && (!om.customMaterial || !om.customMaterial.trim())) {
+          showToast('Please describe the custom material.', 'error');
+          return;
+        }
+        if (!om.quantityRequired || parseFloat(om.quantityRequired) <= 0) {
+          showToast('Please enter quantity.', 'error');
+          return;
+        }
+      }
     }
 
     const hasOtherHardware = formData.hardwareDetails.some(v => !HARDWARE_OPTIONS.includes(v));
@@ -777,7 +796,7 @@ const OrderForm = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-2">
               <p className="text-sm text-slate-500 dark:text-slate-400">Add materials required to produce this order. Stock availability will be checked.</p>
-              <button type="button" onClick={() => setOrderMaterials([...orderMaterials, { materialId: '', quantityRequired: '' }])} className="text-sm text-primary font-medium flex items-center gap-1 hover:underline">
+              <button type="button" onClick={() => setOrderMaterials([...orderMaterials, { materialId: '', customMaterial: '', quantityRequired: '' }])} className="text-sm text-primary font-medium flex items-center gap-1 hover:underline">
                 <Plus size={16} /> Add Material
               </button>
             </div>
@@ -786,23 +805,56 @@ const OrderForm = () => {
               const isLowStock = selectedMat && parseFloat(om.quantityRequired || 0) > selectedMat.availableStock;
               return (
                 <div key={index} className="flex gap-4 items-start bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">Material</label>
-                    <select
-                      required
-                      value={om.materialId}
-                      onChange={(e) => {
-                        const newOm = [...orderMaterials];
-                        newOm[index].materialId = e.target.value;
-                        setOrderMaterials(newOm);
-                      }}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary sm:text-sm"
-                    >
-                      <option value="">-- Select --</option>
-                      {materialsList.map(m => (
-                        <option key={m.id} value={m.id}>{m.materialCode} - {m.materialName} (Stock: {m.availableStock} {m.unit})</option>
-                      ))}
-                    </select>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">Material</label>
+                      <select
+                        required
+                        value={om.materialId}
+                        onChange={(e) => {
+                          const newOm = [...orderMaterials];
+                          newOm[index].materialId = e.target.value;
+                          if (e.target.value !== 'others') newOm[index].customMaterial = '';
+                          setOrderMaterials(newOm);
+                        }}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary sm:text-sm"
+                      >
+                        <option value="">-- Select --</option>
+                        {Object.entries(
+                          materialsList.reduce((acc, m) => {
+                            acc[m.category] = acc[m.category] || [];
+                            acc[m.category].push(m);
+                            return acc;
+                          }, {})
+                        )
+                        .sort(([catA], [catB]) => catA.localeCompare(catB))
+                        .map(([cat, mats]) => (
+                          <optgroup key={cat} label={cat.toUpperCase()}>
+                            {mats.sort((a,b) => a.materialName.localeCompare(b.materialName)).map(m => (
+                              <option key={m.id} value={m.id}>{m.materialName} ({m.unit})</option>
+                            ))}
+                          </optgroup>
+                        ))}
+                        <optgroup label="OTHER">
+                          <option value="others">Others (specify below)</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    {om.materialId === 'others' && (
+                      <div>
+                        <input
+                          required
+                          value={om.customMaterial || ''}
+                          onChange={(e) => {
+                            const newOm = [...orderMaterials];
+                            newOm[index].customMaterial = e.target.value;
+                            setOrderMaterials(newOm);
+                          }}
+                          placeholder="Describe the material (e.g. Bamboo Sheet, Cane Webbing...)"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary sm:text-sm"
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="w-32">
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">Qty Required</label>

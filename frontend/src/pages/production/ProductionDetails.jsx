@@ -573,16 +573,17 @@ const ProductionDetails = () => {
             >
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#64748B' }}>Materials Overview</p>
               {job.order.orderMaterials.slice(0, 4).map(om => {
+                const isCustom = !om.material;
                 const isDeducted = currentStageIndex > 0;
-                const hasEnough = isDeducted || om.material.availableStock >= om.quantityRequired;
-                const pct = isDeducted ? 100 : Math.min(100, Math.round((om.material.availableStock / om.quantityRequired) * 100));
-                const barColor = isDeducted ? '#10B981' : hasEnough ? '#3B82F6' : '#EF4444';
+                const hasEnough = isCustom || isDeducted || om.material.availableStock >= om.quantityRequired;
+                const pct = isCustom ? 100 : (isDeducted ? 100 : Math.min(100, Math.round((om.material.availableStock / om.quantityRequired) * 100)));
+                const barColor = isCustom ? '#A78BFA' : (isDeducted ? '#10B981' : hasEnough ? '#3B82F6' : '#EF4444');
                 return (
                   <div key={om.id} className="mb-3">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-medium text-slate-400 truncate">{om.material.materialName}</span>
+                      <span className="text-xs font-medium text-slate-400 truncate">{isCustom ? om.customMaterialName : om.material.materialName}</span>
                       <span className="text-xs font-bold ml-2" style={{ color: barColor }}>
-                        {isDeducted ? 'Allocated' : hasEnough ? 'OK' : 'Low'}
+                        {isCustom ? 'Custom' : (isDeducted ? 'Allocated' : hasEnough ? 'OK' : 'Low')}
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -714,10 +715,13 @@ const ProductionDetails = () => {
                 {job.order?.orderMaterials?.length > 0 ? (
                   <div className="space-y-3">
                     {job.order.orderMaterials.map(om => {
+                      const isCustom = !om.material;
                       const isDeducted = currentStageIndex > 0;
-                      const hasEnough = isDeducted || om.material.availableStock >= om.quantityRequired;
-                      const pct = isDeducted ? 100 : Math.min(100, Math.round((om.material.availableStock / om.quantityRequired) * 100));
-                      const { color, label } = isDeducted
+                      const hasEnough = isCustom || isDeducted || om.material.availableStock >= om.quantityRequired;
+                      const pct = isCustom ? 100 : (isDeducted ? 100 : Math.min(100, Math.round((om.material.availableStock / om.quantityRequired) * 100)));
+                      const { color, label } = isCustom 
+                        ? { color: '#A78BFA', label: 'Custom' }
+                        : isDeducted
                         ? { color: '#10B981', label: 'Allocated' }
                         : hasEnough
                           ? { color: '#3B82F6', label: 'Available' }
@@ -732,14 +736,16 @@ const ProductionDetails = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between items-center mb-2">
-                              <p className="font-semibold text-white text-sm">{om.material.materialName}</p>
+                              <p className="font-semibold text-white text-sm">
+                                {isCustom ? om.customMaterialName : om.material.materialName}
+                              </p>
                               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}>
                                 {label}
                               </span>
                             </div>
                             <div className="flex items-center gap-4 text-xs text-slate-500 mb-2">
-                              <span>Required: <strong className="text-slate-300">{om.quantityRequired} {om.material.unit}</strong></span>
-                              <span>In Stock: <strong className="text-slate-300">{om.material.availableStock} {om.material.unit}</strong></span>
+                              <span>Required: <strong className="text-slate-300">{om.quantityRequired} {isCustom ? 'Units' : om.material.unit}</strong></span>
+                              <span>In Stock: <strong className="text-slate-300">{isCustom ? 'N/A' : `${om.material.availableStock} ${om.material.unit}`}</strong></span>
                             </div>
                             <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
                               <motion.div
