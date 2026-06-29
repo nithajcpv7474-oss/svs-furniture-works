@@ -770,7 +770,7 @@ const OrderForm = () => {
                   setIsCustomItem(false);
                   setCustomItem('');
                 }
-              }} disabled={!formData.furnitureCategory} className="input-field bg-white dark:bg-slate-900 disabled:opacity-50">
+              }} className="input-field bg-white dark:bg-slate-900">
                 <option value="">{formData.furnitureCategory ? '-- Select Item --' : 'Select a category first'}</option>
                 {(isCustomCategory ? [] : (ITEM_MAP[formData.furnitureCategory] || [])).map(item => (
                   <option key={item} value={item}>{item}</option>
