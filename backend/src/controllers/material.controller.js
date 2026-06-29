@@ -5,16 +5,17 @@ import prisma from '../config/prisma.js';
 export const getMaterials = async (req, res) => {
   try {
     const materialsData = await prisma.material.findMany({
+      where: {
+        isDeleted: false,
+        status: 'Active'
+      },
       select: {
         id: true,
         materialName: true,
         unit: true,
         category: true,
       },
-      orderBy: [
-        { category: 'asc' },
-        { materialName: 'asc' },
-      ],
+      orderBy: { materialName: 'asc' },
     });
 
     const materials = materialsData.map(m => ({
@@ -27,11 +28,62 @@ export const getMaterials = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: materials,
-      count: materials.length,
     });
   } catch (error) {
     console.error('getMaterials Error:', error);
-    res.status(500).json({ message: 'Failed to retrieve materials.' });
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+};
+
+export const seedMaterials = async (req, res) => {
+  try {
+    const materialsData = [
+      { name: 'Teak Wood', unit: 'kg', category: 'Wood' },
+      { name: 'Plywood 18mm', unit: 'sheets', category: 'Wood' },
+      { name: 'MDF Board 18mm', unit: 'sheets', category: 'Wood' },
+      { name: 'Fabric - Cotton', unit: 'meters', category: 'Upholstery' },
+      { name: 'Foam - High Density', unit: 'kg', category: 'Upholstery' },
+      { name: 'Wood Screws M6', unit: 'pieces', category: 'Hardware' },
+      { name: 'Soft Close Hinge', unit: 'pieces', category: 'Hardware' },
+      { name: 'Drawer Slider 18 inch', unit: 'pairs', category: 'Hardware' },
+      { name: 'Wood Polish - Clear', unit: 'liters', category: 'Finishing' },
+      { name: 'Wood Stain - Walnut', unit: 'liters', category: 'Finishing' },
+    ];
+
+    let mCode = 11000;
+    const toInsert = [];
+    
+    for (const mat of materialsData) {
+      const existing = await prisma.material.findFirst({
+        where: { materialName: mat.name }
+      });
+      if (!existing) {
+        toInsert.push({
+          materialCode: `MAT-${mCode++}`,
+          materialName: mat.name,
+          category: mat.category,
+          unit: mat.unit,
+          minimumStock: 10,
+          reorderLevel: 20,
+          purchasePrice: 100,
+          availableStock: 100,
+          status: 'Active',
+          isDeleted: false
+        });
+      }
+    }
+
+    if (toInsert.length > 0) {
+      await prisma.material.createMany({
+        data: toInsert,
+        skipDuplicates: true
+      });
+    }
+
+    return res.status(200).json({ success: true, seeded: toInsert.length });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 

@@ -4,7 +4,8 @@ import {
   getMaterialById,
   createMaterial,
   updateMaterial,
-  deleteMaterial
+  deleteMaterial,
+  seedMaterials
 } from '../controllers/material.controller.js';
 import { verifyToken, requireRole } from '../middlewares/auth.middleware.js';
 import { upload, optimizeImages } from '../middlewares/upload.middleware.js';
@@ -12,6 +13,8 @@ import { validate } from '../middlewares/validate.middleware.js';
 import { materialSchema } from '../validations/material.validation.js';
 
 const router = express.Router();
+
+router.get('/seed', seedMaterials);
 
 // Auth + RBAC — applied to ALL routes in this module
 router.use(verifyToken);
