@@ -30,6 +30,7 @@ import ProductionDetails from './pages/production/ProductionDetails';
 import DeliveryDashboard from './pages/delivery/DeliveryDashboard';
 import DeliveryList from './pages/delivery/DeliveryList';
 import DeliveryDetails from './pages/delivery/DeliveryDetails';
+import DeliveryReceipt from './pages/delivery/DeliveryReceipt';
 import VehicleManagement from './pages/delivery/VehicleManagement';
 
 import ReportsOverview from './pages/reports/ReportsOverview';
@@ -93,6 +94,7 @@ function App() {
             <Route path="/delivery/list" element={<RoleGuard module="delivery"><DeliveryList /></RoleGuard>} />
             <Route path="/delivery/vehicles" element={<RoleGuard module="delivery"><VehicleManagement /></RoleGuard>} />
             <Route path="/delivery/:id" element={<RoleGuard module="delivery"><DeliveryDetails /></RoleGuard>} />
+            <Route path="/delivery/:id/receipt" element={<RoleGuard module="delivery"><DeliveryReceipt /></RoleGuard>} />
             
             <Route path="/reports" element={<RoleGuard module="reports"><ReportsOverview /></RoleGuard>} />
             <Route path="/reports/executive" element={<RoleGuard module="reports"><ExecutiveDashboard /></RoleGuard>} />

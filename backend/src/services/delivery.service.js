@@ -36,15 +36,27 @@ export const deleteVehicle = async (id) => {
 };
 
 // --- Deliveries ---
-export const getDeliveries = async ({ skip, take, search, status }) => {
+export const getDeliveries = async ({ skip, take, search, status, type, date }) => {
   const where = {};
   if (status) where.deliveryStatus = status;
+  if (type) where.deliveryType = type;
+  if (date) {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    where.expectedDeliveryDate = {
+      gte: startOfDay,
+      lte: endOfDay
+    };
+  }
   if (search) {
     where.OR = [
       { deliveryNumber: { contains: search, mode: 'insensitive' } },
       { order: { orderNumber: { contains: search, mode: 'insensitive' } } },
       { customer: { fullName: { contains: search, mode: 'insensitive' } } },
-      { receiverName: { contains: search, mode: 'insensitive' } }
+      { receiverName: { contains: search, mode: 'insensitive' } },
+      { transporterName: { contains: search, mode: 'insensitive' } }
     ];
   }
 
@@ -56,9 +68,10 @@ export const getDeliveries = async ({ skip, take, search, status }) => {
       include: {
         order: { include: { customer: true } },
         customer: true,
-        vehicle: true
+        vehicle: true,
+        history: { include: { user: { select: { fullName: true } } }, orderBy: { changedAt: 'desc' } }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { expectedDeliveryDate: 'asc' }
     }),
     prisma.delivery.count({ where })
   ]);
@@ -192,4 +205,85 @@ export const updateDelivery = async (id, data, files = null) => {
   }
 
   return delivery;
+};
+
+export const updateDeliveryStatus = async (id, data, user) => {
+  return await prisma.$transaction(async (tx) => {
+    const delivery = await tx.delivery.findUnique({ where: { id }, include: { order: true } });
+    if (!delivery) throw new Error('Delivery not found');
+
+    const fromStatus = delivery.deliveryStatus;
+    const toStatus = data.deliveryStatus;
+
+    if (['Failed', 'Rescheduled', 'Returned'].includes(toStatus) && (!data.reason || !data.reason.trim())) {
+      throw new Error(`Reason is required when moving to ${toStatus}`);
+    }
+
+    const updateData = {
+      deliveryStatus: toStatus,
+      transporterName: data.transporterName || delivery.transporterName,
+      transporterContact: data.transporterContact || delivery.transporterContact,
+      deliveryNotes: data.deliveryNotes || delivery.deliveryNotes,
+    };
+
+    if (data.scheduledDate) updateData.expectedDeliveryDate = new Date(data.scheduledDate);
+    if (data.scheduledTimeSlot) updateData.scheduledTimeSlot = data.scheduledTimeSlot;
+
+    if (toStatus === 'Failed') updateData.failureReason = data.reason;
+    if (toStatus === 'Rescheduled') {
+      updateData.rescheduleReason = data.reason;
+      if (!data.scheduledDate) throw new Error('New date is required for rescheduling');
+    }
+    if (toStatus === 'Returned') updateData.returnReason = data.reason;
+
+    if (toStatus === 'Dispatched') updateData.dispatchDate = new Date();
+    if (toStatus === 'Delivered') updateData.actualDeliveryDate = new Date();
+
+    const updatedDelivery = await tx.delivery.update({
+      where: { id },
+      data: updateData,
+      include: { order: { include: { customer: true } } }
+    });
+
+    await tx.deliveryHistory.create({
+      data: {
+        deliveryId: id,
+        fromStatus,
+        toStatus,
+        changedBy: user.id,
+        notes: data.notes || null,
+        reason: data.reason || null
+      }
+    });
+
+    if (toStatus === 'Delivered') {
+      await tx.order.update({
+        where: { id: delivery.orderId },
+        data: { orderStatus: 'Delivered' }
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: delivery.orderId,
+          fromStatus: delivery.order.orderStatus,
+          toStatus: 'Delivered',
+          changedBy: user.id,
+          notes: 'Order marked Delivered automatically from Delivery module'
+        }
+      });
+    }
+
+    return updatedDelivery;
+  });
+};
+
+export const assignTransporter = async (id, data, user) => {
+  return await prisma.delivery.update({
+    where: { id },
+    data: {
+      transporterName: data.transporterName,
+      transporterContact: data.transporterContact,
+      expectedDeliveryDate: data.scheduledDate ? new Date(data.scheduledDate) : undefined,
+      scheduledTimeSlot: data.scheduledTimeSlot
+    }
+  });
 };

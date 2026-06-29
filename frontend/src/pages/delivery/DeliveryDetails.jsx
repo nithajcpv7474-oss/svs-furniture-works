@@ -6,8 +6,8 @@ import { AuthContext } from '../../context/AuthContext';
 import { ArrowLeft, Truck, Package, MapPin, Calendar, Upload, CheckCircle, FileText, Loader2, Image as ImageIcon, Ship, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
-const STATUS_STAGES = ['Pending', 'Scheduled', 'OutForDelivery', 'Delivered', 'InstallationPending', 'Completed'];
-const EXCEPTION_STAGES = ['Failed', 'Rescheduled'];
+const STATUS_STAGES = ['Pending', 'Scheduled', 'Dispatched', 'InTransit', 'Delivered', 'InstallationPending', 'Completed'];
+const EXCEPTION_STAGES = ['Failed', 'Rescheduled', 'Returned'];
 
 const DeliveryDetails = () => {
   const permission = usePermission('delivery');
@@ -63,7 +63,7 @@ const DeliveryDetails = () => {
     e.preventDefault();
 
     // Validation for Scheduled and beyond
-    const isProgression = ['Scheduled', 'OutForDelivery', 'Delivered', 'InstallationPending', 'Completed'].includes(status);
+    const isProgression = ['Scheduled', 'Dispatched', 'InTransit', 'OutForDelivery', 'Delivered', 'InstallationPending', 'Completed'].includes(status);
     if (isProgression) {
       if (!delivery.deliveryAddress && !delivery.customer?.address) {
         alert('Validation Error: Add a destination address before scheduling this delivery.');
@@ -158,7 +158,7 @@ const DeliveryDetails = () => {
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
-          <button className="btn-secondary text-sm flex items-center gap-2 whitespace-nowrap">
+          <button onClick={() => navigate(`/delivery/${id}/receipt`)} className="btn-secondary text-sm flex items-center gap-2 whitespace-nowrap">
             <FileText size={16} /> Print Delivery Note
           </button>
         </div>

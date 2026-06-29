@@ -220,7 +220,7 @@ export const deleteOrder = async (id) => {
 
 export const updateOrderStatus = async (id, data, user) => {
   return await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({ where: { id } });
+    const order = await tx.order.findUnique({ where: { id }, include: { customer: true } });
     if (!order) throw new Error('Order not found');
 
     const fromStatus = order.orderStatus;
@@ -291,6 +291,44 @@ export const updateOrderStatus = async (id, data, user) => {
         reason: data.reason || null
       }
     });
+
+    if (toStatus === 'ReadyForDelivery') {
+      const existingDelivery = await tx.delivery.findUnique({
+        where: { orderId: id }
+      });
+      if (!existingDelivery) {
+        const deliveryNumber = `DEL-${updatedOrder.orderNumber}-${Date.now().toString().slice(-4)}`;
+        const delivery = await tx.delivery.create({
+          data: {
+            deliveryNumber,
+            orderId: id,
+            customerId: order.customerId,
+            deliveryStatus: 'Scheduled',
+            deliveryType: 'HomeDelivery',
+            deliveryAddress: updatedOrder.deliveryAddress || null,
+            deliveryNotes: updatedOrder.specialInstructions || null,
+          }
+        });
+        
+        await tx.deliveryHistory.create({
+          data: {
+            deliveryId: delivery.id,
+            toStatus: 'Scheduled',
+            changedBy: user.id,
+            notes: 'Delivery scheduled automatically when order marked Ready'
+          }
+        });
+
+        await tx.notification.create({
+           data: {
+             title: `New Delivery — ${updatedOrder.orderNumber}`,
+             message: `Order ${updatedOrder.orderNumber} for ${order.customer.fullName} is ready and scheduled for delivery`,
+             type: 'SYSTEM',
+             priority: 'medium'
+           }
+        });
+      }
+    }
 
     return updatedOrder;
   });

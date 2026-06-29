@@ -58,3 +58,13 @@ export const deleteDelivery = async (id) => {
   const response = await api.delete(`/delivery/${id}`);
   return response.data;
 };
+
+export const updateDeliveryStatus = async (id, data) => {
+  const response = await api.patch(`/delivery/${id}/status`, data);
+  return response.data;
+};
+
+export const assignTransporter = async (id, data) => {
+  const response = await api.patch(`/delivery/${id}/assign`, data);
+  return response.data;
+};

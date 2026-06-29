@@ -32,6 +32,7 @@ model User {
   updatedAt               DateTime   @updatedAt
   auditLogs               AuditLog[]
   orderStatusChanges      OrderStatusHistory[]
+  deliveryStatusChanges   DeliveryHistory[]
   passwordResetTokens     PasswordResetToken[]
 }
 
@@ -299,15 +300,19 @@ model QualityInspection {
 enum DeliveryStatus {
   Pending
   Scheduled
+  Dispatched
+  InTransit
   OutForDelivery
   Delivered
   InstallationPending
   Completed
   Failed
   Rescheduled
+  Returned
 }
 
 enum DeliveryType {
+  HomeDelivery
   Local
   Dealer
   Export
@@ -340,8 +345,8 @@ model Delivery {
   order           Order         @relation(fields: [orderId], references: [id])
   customerId      String
   customer        Customer      @relation(fields: [customerId], references: [id])
-  productionJobId String        @unique
-  productionJob   ProductionJob @relation(fields: [productionJobId], references: [id])
+  productionJobId String?       @unique
+  productionJob   ProductionJob? @relation(fields: [productionJobId], references: [id])
   vehicleId       String?
   vehicle         Vehicle?      @relation(fields: [vehicleId], references: [id])
 
@@ -354,7 +359,15 @@ model Delivery {
   deliveryAddress String?
   receiverName    String?
   receiverPhone   String?
-  deliveryRemarks String?
+  deliveryRemarks    String?
+  deliveryNotes      String?
+  
+  scheduledTimeSlot  String?
+  transporterName    String?
+  transporterContact String?
+  failureReason      String?
+  rescheduleReason   String?
+  returnReason       String?
 
   shippingDocRef       String?
   destinationPort      String?
@@ -366,11 +379,26 @@ model Delivery {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  history DeliveryHistory[]
+
   @@index([orderId])
   @@index([customerId])
   @@index([productionJobId])
   @@index([vehicleId])
   @@index([deliveryStatus])
+}
+
+model DeliveryHistory {
+  id             String   @id @default(uuid())
+  deliveryId     String
+  fromStatus     String?
+  toStatus       String
+  changedBy      String
+  changedAt      DateTime @default(now())
+  notes          String?
+  reason         String?
+  delivery       Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [changedBy], references: [id])
 }
 
 model AppSetting {

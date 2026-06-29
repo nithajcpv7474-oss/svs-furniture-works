@@ -41,4 +41,7 @@ router.put('/:id',
   deliveryController.updateDelivery
 );
 
+router.patch('/:id/status', deliveryController.updateDeliveryStatus);
+router.patch('/:id/assign', deliveryController.assignTransporter);
+
 export default router;

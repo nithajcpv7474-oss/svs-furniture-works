@@ -68,9 +68,9 @@ export const getDeliveries = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const { search, status } = req.query;
+    const { search, status, type, date } = req.query;
 
-    const { deliveries, total } = await deliveryService.getDeliveries({ skip, take: limit, search, status });
+    const { deliveries, total } = await deliveryService.getDeliveries({ skip, take: limit, search, status, type, date });
 
     res.json({
       data: deliveries,
@@ -107,6 +107,26 @@ export const updateDelivery = async (req, res) => {
     const oldDelivery = await deliveryService.getDeliveryById(req.params.id);
     const delivery = await deliveryService.updateDelivery(req.params.id, req.body, files);
     logAction({ userId: req.user.id, action: 'Update', module: 'Delivery', oldValue: oldDelivery, newValue: delivery, req });
+    res.json(delivery);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const updateDeliveryStatus = async (req, res) => {
+  try {
+    const delivery = await deliveryService.updateDeliveryStatus(req.params.id, req.body, req.user);
+    logAction({ userId: req.user.id, action: 'UpdateStatus', module: 'Delivery', newValue: { id: req.params.id, status: req.body.deliveryStatus }, req });
+    res.json(delivery);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const assignTransporter = async (req, res) => {
+  try {
+    const delivery = await deliveryService.assignTransporter(req.params.id, req.body, req.user);
+    logAction({ userId: req.user.id, action: 'AssignTransporter', module: 'Delivery', newValue: { id: req.params.id, transporter: req.body.transporterName }, req });
     res.json(delivery);
   } catch (error) {
     res.status(400).json({ message: error.message });
