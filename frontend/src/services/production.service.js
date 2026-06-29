@@ -1,66 +1,59 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost:5005/api/production';
-
-// Helpers to get token from localStorage
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  };
-};
+import api from './api';
 
 // Jobs
 export const getProductionJobs = async (params) => {
-  const response = await axios.get(API_URL, { params, ...getAuthHeaders() });
+  const response = await api.get('/production', { params });
   return response.data;
 };
 
 export const getProductionJobById = async (id) => {
-  const response = await axios.get(`${API_URL}/${id}`, getAuthHeaders());
+  const response = await api.get(`/production/${id}`);
   return response.data;
 };
 
 export const createProductionJob = async (data) => {
-  const response = await axios.post(API_URL, data, getAuthHeaders());
+  const response = await api.post('/production', data);
   return response.data;
 };
 
 export const updateProductionJob = async (id, data) => {
-  const response = await axios.put(`${API_URL}/${id}`, data, getAuthHeaders());
+  const response = await api.put(`/production/${id}`, data);
   return response.data;
 };
 
 export const advanceProductionStage = async (id, stage) => {
-  const response = await axios.put(`${API_URL}/${id}/stage`, { stage }, getAuthHeaders());
+  const response = await api.put(`/production/${id}/stage`, { stage });
+  return response.data;
+};
+
+export const assignProductionWorker = async (id, workerId) => {
+  const response = await api.put(`/production/${id}/assign`, { workerId });
   return response.data;
 };
 
 export const deleteProductionJob = async (id) => {
-  const response = await axios.delete(`${API_URL}/${id}`, getAuthHeaders());
+  const response = await api.delete(`/production/${id}`);
   return response.data;
 };
 
 // Tasks
 export const createProductionTask = async (jobId, data) => {
-  const response = await axios.post(`${API_URL}/${jobId}/tasks`, data, getAuthHeaders());
+  const response = await api.post(`/production/${jobId}/tasks`, data);
   return response.data;
 };
 
 export const updateProductionTask = async (taskId, data) => {
-  const response = await axios.put(`${API_URL}/tasks/${taskId}`, data, getAuthHeaders());
+  const response = await api.put(`/production/tasks/${taskId}`, data);
   return response.data;
 };
 
 export const deleteProductionTask = async (taskId) => {
-  const response = await axios.delete(`${API_URL}/tasks/${taskId}`, getAuthHeaders());
+  const response = await api.delete(`/production/tasks/${taskId}`);
   return response.data;
 };
 
 // Inspections
 export const createQualityInspection = async (jobId, data) => {
-  const response = await axios.post(`${API_URL}/${jobId}/inspections`, data, getAuthHeaders());
+  const response = await api.post(`/production/${jobId}/inspections`, data);
   return response.data;
 };

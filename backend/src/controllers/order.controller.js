@@ -109,6 +109,39 @@ export const updateOrderStatus = async (req, res) => {
       status, notes, reason, paymentAmount, paymentMode, paymentReference
     }, req.user);
 
+    // Auto-create Production Job if status is InProduction
+    if (status === 'InProduction') {
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+      try {
+        const exists = await prisma.productionJob.findFirst({
+          where: { orderId: order.id }
+        });
+
+        if (!exists) {
+          const count = await prisma.productionJob.count();
+          const jobNumber = `PRD-${String(count + 1).padStart(4, '0')}`;
+          
+          await prisma.productionJob.create({
+            data: {
+              jobNumber,
+              orderId: order.id,
+              currentStage: 'Job Created',
+              priority: order.priority || 'Medium',
+              startDate: new Date(),
+              expectedEndDate: order.expectedDeliveryDate || null,
+              progressPercent: 0,
+            }
+          });
+          console.log(`Auto-created production job ${jobNumber} for order ${order.orderNumber}`);
+        }
+      } catch (err) {
+        console.error('Failed to auto-create production job:', err);
+      } finally {
+        await prisma.$disconnect();
+      }
+    }
+
     await notifyOrderStatusChange(updatedOrder, status, reason);
     logAction({ userId: req.user.id, action: 'Update Status', module: 'Orders', oldValue: { status: order.orderStatus }, newValue: { status }, req });
 
