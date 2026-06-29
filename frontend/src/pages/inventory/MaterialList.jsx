@@ -23,7 +23,7 @@ const MaterialList = () => {
     setLoading(true);
     try {
       const res = await getMaterials({ search });
-      setMaterials(res.data ? res : { data: res, meta: { total: res.length } });
+      setMaterials(res.data ? res : { data: res, count: res.length, meta: { total: res.length } });
     } catch (error) {
       console.error(error);
     } finally {
@@ -149,7 +149,7 @@ const MaterialList = () => {
         </div>
         <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
           <span>Total Items:</span>
-          <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-2.5 py-0.5 rounded-full text-xs font-bold">{materials.meta.total}</span>
+          <span className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-2.5 py-0.5 rounded-full text-xs font-bold">{materials.meta?.total ?? materials.count ?? 0}</span>
         </div>
       </div>
 
