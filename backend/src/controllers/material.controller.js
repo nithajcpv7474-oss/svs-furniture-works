@@ -1,30 +1,33 @@
 import * as materialService from '../services/material.service.js';
 import { logAction } from '../services/audit.service.js';
+import prisma from '../config/prisma.js';
 
 export const getMaterials = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    const { search, category, status } = req.query;
-
-    const { materials, total } = await materialService.getMaterials({
-      skip,
-      take: limit,
-      search,
-      category,
-      status,
+    const materialsData = await prisma.material.findMany({
+      select: {
+        id: true,
+        materialName: true,
+        unit: true,
+        category: true,
+      },
+      orderBy: [
+        { category: 'asc' },
+        { materialName: 'asc' },
+      ],
     });
 
-    res.status(200).json({
+    const materials = materialsData.map(m => ({
+      id: m.id,
+      name: m.materialName,
+      unit: m.unit,
+      category: m.category,
+    }));
+
+    return res.status(200).json({
+      success: true,
       data: materials,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      count: materials.length,
     });
   } catch (error) {
     console.error('getMaterials Error:', error);

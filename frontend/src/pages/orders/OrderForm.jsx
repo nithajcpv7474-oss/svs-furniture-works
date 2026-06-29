@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getOrderById, createOrder, updateOrder } from '../../services/order.service';
 import { getCustomers } from '../../services/customer.service';
 import { getMaterials } from '../../services/material.service';
+import { AuthContext } from '../../context/AuthContext';
 import { 
   ArrowLeft, Save, Loader2, User, Package, Ruler, Hammer, 
   Settings, Scissors, IndianRupee, Truck, Paperclip, FileText,
@@ -321,7 +322,9 @@ const OrderForm = () => {
   });
 
   const [customers, setCustomers] = useState([]);
-  const [materialsList, setMaterialsList] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [materialsError, setMaterialsError] = useState(null);
   const [orderMaterials, setOrderMaterials] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
@@ -409,12 +412,70 @@ const OrderForm = () => {
     return () => observer.disconnect();
   }, []);
 
+  const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      setMaterialsLoading(true);
+      setMaterialsError(null);
+      try {
+        const response = await fetch('/api/materials', {
+          headers: {
+            'Authorization': `Bearer ${user?.token || ''}`,
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Handle both { data: [] } and [] formats
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data.data)
+            ? data.data
+            : [];
+
+        console.log('Materials loaded:', list.length); // debug log
+        setMaterials(list);
+
+      } catch (err) {
+        console.error('Materials fetch failed:', err);
+        setMaterialsError('Failed to load materials. Please refresh.');
+      } finally {
+        setMaterialsLoading(false);
+      }
+    };
+
+    fetchMaterials();
+  }, [user]);
+
+  // Group materials by category for optgroup
+  const groupedMaterials = materials.reduce((groups, material) => {
+    const category = material.category || 'Other';
+    if (!groups[category]) groups[category] = [];
+    groups[category].push(material);
+    return groups;
+  }, {});
+
+  // Category display order
+  const categoryOrder = [
+    'Wood',
+    'Upholstery',
+    'Hardware',
+    'Metal',
+    'Glass',
+    'Finishing',
+    'Packaging',
+  ];
+
   const fetchInitialData = async () => {
     try {
       const custRes = await getCustomers({ limit: 100, status: 'Active' });
       setCustomers(custRes.data || []);
-      const matRes = await getMaterials({ limit: 1000 });
-      setMaterialsList(matRes.data || []);
 
       if (isEdit) {
         const data = await getOrderById(id);
@@ -837,7 +898,7 @@ const OrderForm = () => {
               </button>
             </div>
             {orderMaterials.map((om, index) => {
-              const selectedMat = materialsList.find(m => m.id === om.materialId);
+              const selectedMat = materials.find(m => m.id === om.materialId);
               const isLowStock = selectedMat && parseFloat(om.quantityRequired || 0) > selectedMat.availableStock;
               return (
                 <div key={index} className="flex gap-4 items-start bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -853,33 +914,71 @@ const OrderForm = () => {
                           if (e.target.value !== 'others') newOm[index].customMaterial = '';
                           setOrderMaterials(newOm);
                         }}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary sm:text-sm"
+                        disabled={materialsLoading}
+                        style={{
+                          background: '#0d1117',
+                          border: '1px solid #1e293b',
+                          color: materialsLoading ? '#6b7280' : 'white',
+                          borderRadius: '8px',
+                          padding: '10px 14px',
+                          width: '100%',
+                          cursor: 'pointer',
+                        }}
                       >
-                        <option value="">-- Select --</option>
-                        {Object.entries(
-                          materialsList.reduce((acc, m) => {
-                            acc[m.category] = acc[m.category] || [];
-                            acc[m.category].push(m);
-                            return acc;
-                          }, {})
-                        )
-                        .sort(([catA], [catB]) => catA.localeCompare(catB))
-                        .map(([cat, mats]) => (
-                          <optgroup key={cat} label={cat.toUpperCase()}>
-                            {mats.sort((a,b) => a.materialName.localeCompare(b.materialName)).map(m => (
-                              <option key={m.id} value={m.id}>{m.materialName} ({m.unit})</option>
-                            ))}
-                          </optgroup>
-                        ))}
-                        <optgroup label="OTHER">
+                        {/* Default option */}
+                        <option value="">
+                          {materialsLoading
+                            ? 'Loading materials...'
+                            : materials.length === 0
+                              ? 'No materials available'
+                              : '-- Select Material --'}
+                        </option>
+
+                        {/* Grouped options by category */}
+                        {categoryOrder
+                          .filter(cat => groupedMaterials[cat]?.length > 0)
+                          .map(category => (
+                            <optgroup key={category} label={`── ${category.toUpperCase()} ──`}>
+                              {groupedMaterials[category].map(material => (
+                                <option key={material.id} value={material.id}>
+                                  {material.name} ({material.unit})
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))
+                        }
+
+                        {/* Any categories not in the order list */}
+                        {Object.keys(groupedMaterials)
+                          .filter(cat => !categoryOrder.includes(cat))
+                          .map(category => (
+                            <optgroup key={category} label={`── ${category.toUpperCase()} ──`}>
+                              {groupedMaterials[category].map(material => (
+                                <option key={material.id} value={material.id}>
+                                  {material.name} ({material.unit})
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))
+                        }
+
+                        {/* Others — always last */}
+                        <optgroup label="── OTHER ──">
                           <option value="others">Others (specify below)</option>
                         </optgroup>
                       </select>
+                      {/* Show if loading failed */}
+                      {materialsError && (
+                        <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '4px' }}>
+                          {materialsError}
+                        </p>
+                      )}
                     </div>
                     {om.materialId === 'others' && (
                       <div>
                         <input
                           required
+                          type="text"
                           value={om.customMaterial || ''}
                           onChange={(e) => {
                             const newOm = [...orderMaterials];
@@ -887,7 +986,15 @@ const OrderForm = () => {
                             setOrderMaterials(newOm);
                           }}
                           placeholder="Describe the material (e.g. Bamboo Sheet, Cane Webbing...)"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary sm:text-sm"
+                          style={{
+                            marginTop: '8px',
+                            background: '#0d1117',
+                            border: '1px solid #f97316',
+                            color: 'white',
+                            borderRadius: '8px',
+                            padding: '10px 14px',
+                            width: '100%',
+                          }}
                         />
                       </div>
                     )}
