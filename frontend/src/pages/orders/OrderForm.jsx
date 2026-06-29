@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getOrderById, createOrder, updateOrder } from '../../services/order.service';
 import { getCustomers } from '../../services/customer.service';
-import { getMaterials } from '../../services/material.service';
+import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
 import { 
   ArrowLeft, Save, Loader2, User, Package, Ruler, Hammer, 
@@ -414,44 +414,31 @@ const OrderForm = () => {
 
   const { user } = useContext(AuthContext);
 
+  const handleBomChange = (index, field, value) => {
+    const newOm = [...orderMaterials];
+    newOm[index][field] = value;
+    if (field === 'materialId' && value !== 'others') {
+      newOm[index].customMaterial = '';
+    }
+    setOrderMaterials(newOm);
+  };
+
   useEffect(() => {
-    const fetchMaterials = async () => {
-      setMaterialsLoading(true);
-      setMaterialsError(null);
+    const load = async () => {
       try {
-        const response = await fetch('/api/materials', {
-          headers: {
-            'Authorization': `Bearer ${user?.token || ''}`,
-            'Content-Type': 'application/json',
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Handle both { data: [] } and [] formats
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data.data)
-            ? data.data
-            : [];
-
-        console.log('Materials loaded:', list.length); // debug log
+        const res = await api.get('/materials');
+        const json = res.data;
+        const list = Array.isArray(json) ? json
+                   : Array.isArray(json.data) ? json.data
+                   : [];
         setMaterials(list);
-
-      } catch (err) {
-        console.error('Materials fetch failed:', err);
-        setMaterialsError('Failed to load materials. Please refresh.');
-      } finally {
-        setMaterialsLoading(false);
+        console.log('Materials loaded:', list.length);
+      } catch (e) {
+        console.error('Failed to load materials:', e);
       }
     };
-
-    fetchMaterials();
-  }, [user]);
+    load();
+  }, []);
 
   // Group materials by category for optgroup
   const groupedMaterials = materials.reduce((groups, material) => {
@@ -906,97 +893,45 @@ const OrderForm = () => {
                     <div>
                       <label className="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">Material</label>
                       <select
-                        required
                         value={om.materialId}
-                        onChange={(e) => {
-                          const newOm = [...orderMaterials];
-                          newOm[index].materialId = e.target.value;
-                          if (e.target.value !== 'others') newOm[index].customMaterial = '';
-                          setOrderMaterials(newOm);
-                        }}
-                        disabled={materialsLoading}
+                        onChange={(e) => handleBomChange(index, 'materialId', e.target.value)}
                         style={{
                           background: '#0d1117',
                           border: '1px solid #1e293b',
-                          color: materialsLoading ? '#6b7280' : 'white',
+                          color: 'white',
                           borderRadius: '8px',
                           padding: '10px 14px',
                           width: '100%',
                           cursor: 'pointer',
                         }}
                       >
-                        {/* Default option */}
-                        <option value="">
-                          {materialsLoading
-                            ? 'Loading materials...'
-                            : materials.length === 0
-                              ? 'No materials available'
-                              : '-- Select Material --'}
-                        </option>
-
-                        {/* Grouped options by category */}
-                        {categoryOrder
-                          .filter(cat => groupedMaterials[cat]?.length > 0)
-                          .map(category => (
-                            <optgroup key={category} label={`── ${category.toUpperCase()} ──`}>
-                              {groupedMaterials[category].map(material => (
-                                <option key={material.id} value={material.id}>
-                                  {material.name} ({material.unit})
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))
-                        }
-
-                        {/* Any categories not in the order list */}
-                        {Object.keys(groupedMaterials)
-                          .filter(cat => !categoryOrder.includes(cat))
-                          .map(category => (
-                            <optgroup key={category} label={`── ${category.toUpperCase()} ──`}>
-                              {groupedMaterials[category].map(material => (
-                                <option key={material.id} value={material.id}>
-                                  {material.name} ({material.unit})
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))
-                        }
-
-                        {/* Others — always last */}
-                        <optgroup label="── OTHER ──">
-                          <option value="others">Others (specify below)</option>
-                        </optgroup>
+                        <option value="">-- Select Material --</option>
+                        {materials.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.unit})
+                          </option>
+                        ))}
+                        <option value="others">Others (specify)</option>
                       </select>
-                      {/* Show if loading failed */}
-                      {materialsError && (
-                        <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '4px' }}>
-                          {materialsError}
-                        </p>
-                      )}
                     </div>
                     {om.materialId === 'others' && (
-                      <div>
-                        <input
-                          required
-                          type="text"
-                          value={om.customMaterial || ''}
-                          onChange={(e) => {
-                            const newOm = [...orderMaterials];
-                            newOm[index].customMaterial = e.target.value;
-                            setOrderMaterials(newOm);
-                          }}
-                          placeholder="Describe the material (e.g. Bamboo Sheet, Cane Webbing...)"
-                          style={{
-                            marginTop: '8px',
-                            background: '#0d1117',
-                            border: '1px solid #f97316',
-                            color: 'white',
-                            borderRadius: '8px',
-                            padding: '10px 14px',
-                            width: '100%',
-                          }}
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        value={om.customMaterial || ''}
+                        onChange={(e) =>
+                          handleBomChange(index, 'customMaterial', e.target.value)
+                        }
+                        placeholder="Type material name..."
+                        style={{
+                          marginTop: '8px',
+                          width: '100%',
+                          background: '#0d1117',
+                          border: '1px solid #f97316',
+                          color: 'white',
+                          borderRadius: '8px',
+                          padding: '10px 14px',
+                        }}
+                      />
                     )}
                   </div>
                   <div className="w-32">
